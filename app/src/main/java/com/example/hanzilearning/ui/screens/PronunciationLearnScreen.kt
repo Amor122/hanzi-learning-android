@@ -58,6 +58,11 @@ fun PronunciationLearnScreen(
 
     fun playStandard() { ttsHelper.speak(currentChar.character) }
     fun playSlow() { ttsHelper.speakSlow(currentChar.character) }
+    // 朗读字典式的完整释义（如果没有则回退到简短字义）
+    fun playMeaning() {
+        val text = if (currentChar.fullMeaning.isNotEmpty()) currentChar.fullMeaning else currentChar.meaning
+        ttsHelper.speakSlow("${currentChar.character}，${currentChar.pinyin}。意思是：$text")
+    }
 
     fun startRecording() {
         if (!hasRecordPermission) { onRequestPermission(); return }
@@ -179,13 +184,13 @@ fun PronunciationLearnScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // ========= 3. 拼音 + 字义 =========
+            // ========= 3. 拼音 + 字义（并排） =========
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // 拼音
-                Card(modifier = Modifier.weight(1f).height(150.dp),
+                Card(modifier = Modifier.weight(1f).height(200.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     border = androidx.compose.foundation.BorderStroke(2.dp,
@@ -225,33 +230,40 @@ fun PronunciationLearnScreen(
                     }
                 }
 
-                // 字义
-                Card(modifier = Modifier.weight(1f).height(150.dp),
+                // 字义（字典式解释：字+拼音+完整释义）
+                Card(modifier = Modifier.weight(1f).height(200.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
                     border = androidx.compose.foundation.BorderStroke(2.dp,
                         Color(0xFF2196F3).copy(alpha = 0.3f))
                 ) {
-                    Column(modifier = Modifier.fillMaxSize().padding(8.dp),
+                    Column(modifier = Modifier.fillMaxSize().padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center) {
+                        // 显示字典式的完整释义（优先 fullMeaning，没有则用 meaning）
                         Text("字义", fontSize = 12.sp, fontWeight = FontWeight.Bold,
                             fontFamily = KaiTiFontFamily, color = Color(0xFF1976D2))
+                        Spacer(Modifier.height(4.dp))
+                        Text("${currentChar.character}·${currentChar.pinyin}",
+                            fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                            fontFamily = KaiTiFontFamily, color = Color(0xFF1976D2))
                         Spacer(Modifier.height(6.dp))
-                        Text(currentChar.character, fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold, fontFamily = KaiTiFontFamily,
-                            color = Color(0xFF1976D2))
-                        Spacer(Modifier.height(6.dp))
-                        Text(currentChar.meaning, fontSize = 18.sp,
-                            fontFamily = KaiTiFontFamily, color = Color(0xFF5D4037))
+                        Text(
+                            text = if (currentChar.fullMeaning.isNotEmpty()) currentChar.fullMeaning
+                                   else currentChar.meaning,
+                            fontSize = 15.sp,
+                            fontFamily = KaiTiFontFamily,
+                            color = Color(0xFF5D4037),
+                            lineHeight = 20.sp
+                        )
                         Spacer(Modifier.height(8.dp))
-                        Button(onClick = { playStandard() },
-                            modifier = Modifier.height(34.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp),
+                        Button(onClick = { playMeaning() },
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF2196F3)),
                             shape = RoundedCornerShape(10.dp)) {
-                            Text("朗读", fontSize = 12.sp, fontFamily = KaiTiFontFamily)
+                            Text("📖 朗读释义", fontSize = 12.sp, fontFamily = KaiTiFontFamily)
                         }
                     }
                 }
