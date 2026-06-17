@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary_color">#4CAF50</color>
+    <color name="secondary_color">#FF9800</color>
+    <color name="accent_color">#2196F3</color>
+    <color name="background_color">#FFF8E1</color>
+    <color name="card_color">#FFFFFF</color>
+    <color name="text_color">#3E2723</color>
+    <color name="text_color_secondary">#795548</color>
+    <color name="success_color">#4CAF50</color>
+    <color name="error_color">#F44336</color>
+    <color name="warning_color">#FFC107</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+</resources>

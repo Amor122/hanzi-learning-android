@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">汉字学习</string>
+    <string name="btn_back">返回</string>
+    <string name="btn_next">下一个</string>
+    <string name="btn_complete">完成</string>
+    <string name="btn_record">录音</string>
+    <string name="btn_stop">停止</string>
+    <string name="btn_play">播放</string>
+    <string name="title_pronunciation">发音</string>
+    <string name="title_strokes">笔画</string>
+    <string name="title_progress">学习进度</string>
+    <string name="title_games">趣味游戏</string>
+    <string name="title_game_listen">听音辨字</string>
+    <string name="title_game_select">看图选字</string>
+    <string name="title_game_stroke">笔顺练习</string>
+</resources>

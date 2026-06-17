@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- 官方 hanzi-writer 库（从 jsdelivr CDN 加载） -->
+    <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'SimKai';
+            src: url('simkai.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+            touch-action: none;
+            font-family: 'SimKai', 'KaiTi', '楷体', serif;
+        }
+        #character-target {
+            width: 100%;
+            height: 100%;
+        }
+        #character-target svg text {
+            font-family: 'SimKai', 'KaiTi', '楷体', serif !important;
+        }
+        .loading {
+            position: absolute;
+            font-size: 16px;
+            color: #888;
+            font-family: 'SimKai', 'KaiTi', '楷体', serif;
+        }
+        .error {
+            position: absolute;
+            font-size: 16px;
+            color: #F44336;
+            font-family: 'SimKai', 'KaiTi', '楷体', serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="character-target">
+        <div class="loading" id="loading">加载中...</div>
+    </div>
+    <script>
+        var writer = null;
+        var isReady = false;
+        var currentChar = null;
+        var autoLoop = false;
+
+        function log(msg) {
+            console.log('[HanziWriter] ' + msg);
+        }
+
+        function initCharacter(char, showOutline, showCharacter, strokeColor, outlineColor, autoAnimate) {
+            log('initCharacter: ' + char);
+            currentChar = char;
+            autoLoop = autoAnimate === 1 || autoAnimate === true;
+
+            if (showOutline === undefined) showOutline = true;
+            if (showCharacter === undefined) showCharacter = true;
+            if (strokeColor === undefined) strokeColor = '#4CAF50';
+            if (outlineColor === undefined) outlineColor = '#DDD';
+
+            // 清理
+            if (writer) {
+                try { writer.cancelQuiz(); } catch (e) {}
+            }
+            isReady = false;
+
+            // 显示 loading
+            var target = document.getElementById('character-target');
+            target.innerHTML = '<div class="loading" id="loading">加载中...</div>';
+
+            try {
+                if (typeof HanziWriter === 'undefined') {
+                    log('HanziWriter 库还在加载中...');
+                    var errEl = document.getElementById('loading');
+                    if (errEl) {
+                        errEl.innerText = '库加载中...';
+                    }
+                    // 等待库加载
+                    var tries = 0;
+                    var waitTimer = setInterval(function() {
+                        tries++;
+                        if (typeof HanziWriter !== 'undefined') {
+                            clearInterval(waitTimer);
+                            doCreate(char, showOutline, showCharacter, strokeColor, outlineColor, autoLoop);
+                        } else if (tries > 50) {
+                            clearInterval(waitTimer);
+                            showError('请检查网络连接');
+                        }
+                    }, 100);
+                    return;
+                }
+                doCreate(char, showOutline, showCharacter, strokeColor, outlineColor, autoLoop);
+            } catch (e) {
+                log('Error: ' + e.message);
+                showError('初始化失败');
+            }
+        }
+
+        function doCreate(char, showOutline, showCharacter, strokeColor, outlineColor, loop) {
+            var target = document.getElementById('character-target');
+            target.innerHTML = '';
+
+            writer = HanziWriter.create('character-target', char, {
+                width: target.offsetWidth || 300,
+                height: target.offsetHeight || 300,
+                padding: 15,
+                showOutline: showOutline,
+                showCharacter: showCharacter,
+                strokeColor: strokeColor,
+                outlineColor: outlineColor,
+                radicalColor: strokeColor,
+                strokeAnimationSpeed: 0.7,
+                strokeFadeDuration: 400,
+                delayBetweenStrokes: 600,
+                delayBetweenLoops: 2500,
+                onLoadCharDataSuccess: function() {
+                    log('汉字数据加载成功');
+                    isReady = true;
+                    if (window.Android && window.Android.onCharacterLoaded) {
+                        window.Android.onCharacterLoaded();
+                    }
+                    if (loop) {
+                        setTimeout(function() {
+                            if (writer && isReady) startLoop();
+                        }, 500);
+                    }
+                },
+                onLoadCharDataError: function(err) {
+                    log('汉字数据加载失败: ' + err);
+                    isReady = true;
+                    showError('数据加载失败');
+                    if (window.Android && window.Android.onCharacterError) {
+                        window.Android.onCharacterError();
+                    }
+                }
+            });
+        }
+
+        function showError(msg) {
+            var target = document.getElementById('character-target');
+            if (target) target.innerHTML = '<div class="error">' + msg + '</div>';
+        }
+
+        function animate() {
+            if (writer && isReady) {
+                writer.animateCharacter({
+                    onComplete: function() {
+                        if (writer) writer.showCharacter();
+                    }
+                });
+            }
+        }
+
+        function startLoop() {
+            autoLoop = true;
+            if (writer && isReady) {
+                writer.loopCharacterAnimation();
+            }
+        }
+
+        function stopLoop() {
+            autoLoop = false;
+            if (writer) {
+                try { writer.cancelQuiz(); } catch (e) {}
+            }
+        }
+
+        function quiz() {
+            if (writer && isReady) {
+                writer.quiz({
+                    showHintAfterMisses: 3,
+                    highlightOnComplete: true,
+                    onComplete: function(summaryData) {
+                        if (window.Android && window.Android.onQuizComplete) {
+                            window.Android.onQuizComplete(JSON.stringify(summaryData));
+                        }
+                    }
+                });
+            }
+        }
+
+        function cancelQuiz() {
+            if (writer) writer.cancelQuiz();
+        }
+
+        function showOutline() { if (writer) writer.showOutline(); }
+        function hideOutline() { if (writer) writer.hideOutline(); }
+        function showCharacter() { if (writer) writer.showCharacter(); }
+        function hideCharacter() { if (writer) writer.hideCharacter(); }
+        function isLoaded() { return isReady; }
+        function getChar() { return currentChar; }
+
+        window.onerror = function(msg, url, line, col, error) {
+            console.log('Error: ' + msg + ' at line ' + line);
+        };
+
+        log('HTML 页面加载完成');
+    </script>
+</body>
+</html>

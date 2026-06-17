@@ -1,0 +1,45 @@
+# Gradle
+.gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+*.ipr
+*.iws
+/project/
+/local.properties
+
+# Build outputs
+/app/build/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Native build
+.cxx/
+.externalNativeBuild/
+
+# JNI
+*.so
+
+# Generated files
+captures/
+*.log
+
+# Local config
+local.properties
+
+# Kotlin compiler cache
+.kotlin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Keystore (if any)
+*.keystore
+*.jks
