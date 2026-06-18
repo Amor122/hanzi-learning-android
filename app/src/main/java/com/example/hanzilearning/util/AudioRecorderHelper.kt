@@ -29,9 +29,14 @@ class AudioRecorderHelper(private val context: Context) {
             return false
         }
 
+        // 强制清理之前的 recorder 资源，避免状态残留导致后续录音失败
+        forceResetRecorder()
+        stopPlaying()
+
         val fileName = "hanzi_${character}_${System.currentTimeMillis()}.3gp"
         outputFile = File(context.filesDir, fileName)
 
+        var tempRecorder: MediaRecorder? = null
         try {
             val newRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 MediaRecorder(context)
@@ -39,7 +44,7 @@ class AudioRecorderHelper(private val context: Context) {
                 @Suppress("DEPRECATION")
                 MediaRecorder()
             }
-            recorder = newRecorder
+            tempRecorder = newRecorder
 
             newRecorder.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -51,22 +56,36 @@ class AudioRecorderHelper(private val context: Context) {
 
                 prepare()
                 start()
-                isRecordingState = true
-                Log.d(TAG, "Recording started: ${outputFile?.absolutePath}")
-                return true
             }
+            // 只有完全成功后才赋值并更新状态
+            recorder = newRecorder
+            isRecordingState = true
+            Log.d(TAG, "Recording started: ${outputFile?.absolutePath}")
+            return true
         } catch (e: IOException) {
             Log.e(TAG, "Recording prepare failed: ${e.message}")
+            // 失败时释放半初始化的 recorder
+            tempRecorder?.let { safeReleaseRecorder(it) }
+            recorder = null
+            outputFile = null
+            isRecordingState = false
             return false
         } catch (e: Exception) {
             Log.e(TAG, "Recording failed: ${e.message}")
+            tempRecorder?.let { safeReleaseRecorder(it) }
+            recorder = null
+            outputFile = null
+            isRecordingState = false
             return false
         }
     }
 
     fun stopRecording(): File? {
+        val resultFile = outputFile
         if (!isRecordingState || recorder == null) {
-            return outputFile
+            // 即使不在录音中，也强制重置 recorder 状态，避免残留
+            forceResetRecorder()
+            return resultFile
         }
 
         try {
@@ -76,11 +95,39 @@ class AudioRecorderHelper(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Stop recording error: ${e.message}")
+            // 出错时也强制重置
+            forceResetRecorder()
         }
         recorder = null
         isRecordingState = false
         Log.d(TAG, "Recording stopped")
-        return outputFile
+        return resultFile
+    }
+
+    // 安全释放单个 MediaRecorder 实例（忽略所有异常）
+    private fun safeReleaseRecorder(mr: MediaRecorder) {
+        try {
+            mr.stop()
+        } catch (_: Exception) { }
+        try {
+            mr.release()
+        } catch (_: Exception) { }
+    }
+
+    // 强制重置 recorder 状态：释放现有 recorder 并清空状态
+    private fun forceResetRecorder() {
+        recorder?.let {
+            safeReleaseRecorder(it)
+            recorder = null
+        }
+        isRecordingState = false
+    }
+
+    // 用于外部强制重置状态（切换字时调用）
+    fun resetForNewCharacter() {
+        forceResetRecorder()
+        stopPlaying()
+        outputFile = null
     }
 
     fun playRecording(file: File, onCompletion: () -> Unit = {}): Boolean {

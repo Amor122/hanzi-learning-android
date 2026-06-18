@@ -49,6 +49,8 @@ fun PronunciationLearnScreen(
     var practiceCount by remember { mutableStateOf(0) }
 
     LaunchedEffect(currentIndex, currentChar.character) {
+        // 切换字时强制重置录音助手的所有内部状态，避免前一个字的资源残留导致录音失败
+        audioHelper.resetForNewCharacter()
         isFavorited = userPrefs.isFavorite(currentChar.character)
         recordingFile = null
         isRecording = false
